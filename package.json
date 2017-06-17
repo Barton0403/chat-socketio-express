@@ -1,0 +1,13 @@
+{
+  "name": "chat-socketio-express",
+  "version": "1.0.0",
+  "description": "a web chat room",
+  "main": "index.js",
+  "author": "barton",
+  "license": "ISC",
+  "dependencies": {
+    "express": "^4.15.3",
+    "jquery": "^3.2.1",
+    "socket.io": "^2.0.3"
+  }
+}

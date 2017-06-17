@@ -1,0 +1,432 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <meta charset="utf-8">
+  <title></title>
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    html,
+    body {
+      width: 100%;
+      height: 100%;
+    }
+
+    body {
+      padding: 0;
+      margin: 0;
+      font-size: 17px;
+      font-family: "HelveticaNeue-Light", "HelvLightIBM", Arial, sans-serif;
+      overflow: hidden;
+    }
+
+    p {
+      margin: 0;
+    }
+
+    ul,
+    li {
+      margin: 0;
+      padding: 0;
+    }
+
+    li {
+      list-style: none;
+    }
+
+    button,
+    input {
+      outline: none
+    }
+
+    .line-input {
+      height: 30px;
+      font-size: 17px;
+      padding: 0;
+      background: transparent;
+      border-top: 1px solid transparent;
+      border-right: 1px solid transparent;
+      border-bottom: 1px solid #333;
+      color: #333;
+      border-left: 1px solid transparent;
+    }
+
+    .add-username-box {
+      display: flex;
+      /*display: none;*/
+      position: absolute;
+      left: 0;
+      right: 0;
+      top: 0;
+      bottom: 0;
+      background: #fff;
+      justify-content: center;
+      align-items: center;
+    }
+
+    .add-username-box .username {
+      display: inline-flex;
+      text-align: center;
+      width: 300px;
+    }
+
+    .chat-box {
+      display: flex;
+      height: 100%;
+      width: 100%;
+      flex-direction: column;
+      background: #eee;
+    }
+
+    .chat-box .message-box_wrap {
+      display: flex;
+      flex: 1 1 0;
+      flex-direction: column;
+      overflow-x: hidden;
+      overflow-y: scroll;
+    }
+
+    .chat-box .message-box {
+      display: flex;
+      flex: 0 0 auto;
+      flex-direction: column;
+      padding: 20px 50px;
+    }
+
+    .bottom {
+      display: flex;
+      flex-direction: row;
+      height: 60px;
+      background: #333;
+    }
+
+    .bottom .message-input_wrap {
+      display: inline-flex;
+      flex: 1;
+      height: 60px;
+      padding: 0 20px;
+    }
+
+    .bottom .message-input {
+      display: flex;
+      flex: 1;
+      margin-top: 15px;
+      color: #fff;
+      border-bottom: 1px solid #fff;
+    }
+
+
+    .bottom .btn-send_wrap {
+      display: inline-flex;
+      justify-content: center;
+      width: 100px;
+      height: 60px;
+    }
+
+    .bottom .btn-send {
+      outline: none;
+      background: transparent;
+      letter-spacing: .5em;
+      color: #fff;
+      border: 1px solid transparent;
+      font-size: 17px;
+      cursor: pointer;
+    }
+
+    .bottom .btn-send:focus {
+      color: #ffcc4a;
+    }
+
+    .chat-box .top {
+      display: flex;
+      border-bottom: 1px solid #ccc;
+      height: 50px;
+      align-items: center;
+    }
+
+    .chat-box .top .user-num {
+      width: 200px;
+    }
+
+    .view {
+      display: flex;
+      flex: 1;
+    }
+
+    .user-message {
+      user-select: none;
+      cursor: context-menu;
+    }
+
+    .for-user {
+      padding-left: 15px;
+      color: #fff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .for-user .dropdown-toggle {
+      display: block;
+      width: 51px;
+      text-align: center;
+      outline: none;
+      color: #fff;
+      text-decoration: none;
+      cursor: pointer;
+      word-break: normal;
+      white-space: nowrap;
+      text-overflow: ellipsis;
+      overflow: hidden;
+    }
+
+    .for-user.dropdown {
+      position: relative;
+    }
+
+    .for-user .dropdown-body {
+      display: none;
+      position: absolute;
+      bottom: 100%;
+      left: 0;
+      background: #fff;
+      color: #333;
+      width: 150px;
+      word-wrap: break-word;
+      max-height: 159px;
+      overflow-y: auto;
+    }
+
+    .for-user .dropdown-toggle:focus+.dropdown-body {
+      display: block;
+    }
+
+    .for-user .dropdown-body a {
+      padding: 0 15px;
+      height: 30px;
+      line-height: 30px;
+      display: block;
+      cursor: context-menu;
+      word-break: normal;
+      white-space: nowrap;
+      text-overflow: ellipsis;
+      overflow: hidden;
+    }
+
+    .for-user .dropdown-body a:hover {
+      background: #ddd;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="add-username-box">
+    <input type="text" class="username line-input" placeholder="填写你的昵称，回车进入聊天室" autofocus>
+  </div>
+
+  <div class="chat-box">
+    <div class="top">
+      <div class="view"></div>
+      <div class="user-num"></div>
+    </div>
+    <div class="message-box_wrap">
+      <div class="message-box">
+      </div>
+    </div>
+    <div class="bottom">
+      <div class="for-user dropdown">
+        <a href="javascript:void(0)" class="dropdown-toggle">所有人</a>
+        <ul class="dropdown-body">
+          <li><a data-user="">所有人</a></li>
+        </ul>
+      </div>
+      <div class="message-input_wrap">
+        <input type="text" class="message-input line-input">
+      </div>
+      <div class="btn-send_wrap">
+        <button class="btn-send">发送</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="/js/jquery.min.js"></script>
+  <script src="/socket.io/socket.io.js"></script>
+  <script>
+    var socket,
+      my = {
+        userid: null,
+        username: null
+      },
+      toUserId = null,
+      toUserName = null,
+      isLogin = false;
+
+    // 聊天框跳转到底部
+    function scrollToBottom() {
+      var offset = parseFloat($('.message-box')[0].offsetHeight) - parseFloat($('.message-box_wrap')[0].offsetHeight);
+
+      if (offset > 0) {
+        $('.message-box_wrap')[0].scrollTop = offset;
+      }
+    }
+
+    // 消息发送
+    function send() {
+      socket.emit('new message', {
+        toUserId: toUserId, // 有值的时候为私聊
+        message: $('.message-input').val()
+      });
+
+
+      $message = $('<p style="text-align: right;">');
+      let text = $('.message-input').val();
+
+      if (toUserId) {
+        text = '(私聊' + toUserName + ') ' + text
+      }
+
+      $('.message-box').append($message.text(text))
+      $('.message-input').val('');
+
+      scrollToBottom()
+    }
+
+    function initSocket() {
+      socket = io();
+      socket.on('connect', () => {
+        my.userid = socket.id;
+      })
+
+      // socket消息监听器
+      // 监听新消息
+      socket.on('new message', (data) => {
+        $message = $('<p class="user-message">')
+
+        // 双击私聊
+        $message.on('dblclick', function() {
+          toUserId = data.userid;
+          toUserName = data.username;
+          $('.for-user>.dropdown-toggle').text(data.username);
+          $('.message-input').focus();
+        })
+
+        // 输出数据
+        let text = data.username + '：' + data.message;
+        if (data.isPerson) {
+          text = '(私聊) ' + text;
+        }
+        $('.message-box').append($message.text(text))
+
+        scrollToBottom()
+      })
+      // 监听用户加入
+      socket.on('user join', (data) => {
+        // 提示谁加入
+        $('.message-box').append($('<p style="text-align: center;color: #b4aeae;" >').text(data.username + '加入聊天室'))
+
+        // 更改显示总人数
+        $('.user-num').text('聊天室人数：' + data.userNum)
+
+        // 更新用户列表
+        if (data.userid === my.userid) {
+          // 获取用户列表
+          socket.emit('get userlist');
+        } else {
+          $item = $('<a data-user="' + data.userid + '">').text(data.username);
+          $('.for-user>.dropdown-body')[0].insertBefore($('<li><a data-user="' + data.userid + '">' + data.username + '</a></li>')[0], $('.for-user>.dropdown-body')[0].childNodes[0]); // 添加在前部
+        }
+
+        scrollToBottom()
+      })
+      // 监听用户离开
+      socket.on('user leave', (data) => {
+        // 提示谁离开了
+        $('.message-box').append($('<p style="text-align: center;color: #b4aeae;" >').text(data.username + '离开了聊天室'))
+
+        // 更新总人数
+        $('.user-num').text('聊天室人数：' + data.userNum)
+
+        // 更新用户列表
+        $('.for-user>.dropdown-body>li>a').each(function() {
+          if ($(this).data('user') === data.userid) {
+            $(this).parent().remove();
+          }
+        });
+
+        scrollToBottom()
+      });
+
+      // 更新用户列表
+      socket.on('update userlist', (data) => {
+        $('.for-user>.dropdown-body').html('<li><a data-user="">所有人</a></li>');
+
+        data.forEach(function (user) {
+          $('.for-user>.dropdown-body')[0].insertBefore($('<li><a data-user="' + user.userid + '">' + user.username + '</a></li>')[0], $('.for-user>.dropdown-body')[0].childNodes[0])
+        })
+      });
+    }
+
+    // DOM事件监听器
+    // 用户昵称输入框，回车跳转
+    $('.username').on('keydown', function(e) {
+      var _this = this;
+
+      if (e.key === 'Enter') {
+        // 昵称输入，初始化socketio
+        isLogin = true;
+        my.username = $(this).val()
+        initSocket();
+
+        $('.add-username-box').css('display', 'none')
+        $('.message-input').focus();
+        socket.emit('user join', {
+          username: $(_this).val()
+        })
+      }
+    })
+
+    // 发送按钮
+    $('.btn-send').on('click', send);
+
+    // 消息输入框，回车监听发送
+    $('.message-input').on('keydown', function(e) {
+      if (e.key === 'Enter') {
+        send()
+      }
+    })
+
+    var openBlur = true; // 判断是否打开失焦事件
+
+    // 私聊选择点击事件
+    $('.for-user>.dropdown-toggle').on('click', function () {
+
+    });
+    $('.for-user>.dropdown-body').on('click', function(e) {
+      var target = e.srcElement || e.target;
+      toUserId = $(target).data('user');
+      toUserName = $(target).text();
+      $('.for-user>.dropdown-toggle').text($(target).text());
+
+      openBlur = true;
+      $('.for-user>.dropdown-toggle').blur();
+    });
+
+    // 防止失焦消失造成的点击无法触发的问题
+    $('.for-user>.dropdown-toggle').on('blur', function(e) {
+      if (!openBlur) {
+        $(this).focus();
+      }
+    });
+    $('.for-user>.dropdown-body').on('mouseover', function() {
+      openBlur = false;
+    });
+    $('.for-user>.dropdown-body').on('mouseout', function() {
+      openBlur = true;
+    });
+  </script>
+</body>
+
+</html>
